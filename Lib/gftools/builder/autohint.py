@@ -3,6 +3,8 @@ from fontTools.ttLib import TTFont
 from ttfautohint.options import parse_args as ttfautohint_parse_args
 from fontTools import unicodedata
 from collections import Counter
+from psautohint.autohint import hintFiles
+from psautohint.__main__ import get_options as psautohint_parse_args
 import sys
 
 AUTOHINT_SCRIPTS = [
@@ -89,9 +91,14 @@ def autohint(infile, outfile, args=None, add_script=False):
     font = TTFont(infile)
     if not args:
         args = []
+        
+    if 'CFF ' in font:
+        options, pargs = psautohint_parse_args([infile, *args])
+        hintFiles(options)
+    else:
         if add_script:
             script = autohint_script_tag(font)
             if script:
                 args.append("-D" + script)
 
-    ttfautohint(**ttfautohint_parse_args([infile, outfile, *args]))
+        ttfautohint(**ttfautohint_parse_args([infile, outfile, *args]))

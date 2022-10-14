@@ -90,6 +90,7 @@ required, all others have sensible defaults:
 * ``woffDir``: Where to put WOFF2 static fonts. Defaults to ``$outputDir/webfonts``.
 * ``cleanUp``: Whether or not to remove temporary files. Defaults to ``true``.
 * ``autohintTTF``: Whether or not to autohint TTF files. Defaults to ``true``.
+* ``autohintOTF``: Whether or not to autohint OTF files. Defaults to ``true``.
 * ``ttfaUseScript``: Whether or not to detect a font's primary script and add a ``-D<script>`` flag to ttfautohint. Defaults to ``false``.
 * ``vttSources``: To patch a manual VTT hinting program (ttx format) to font binaries.
 * ``axisOrder``: STAT table axis order. Defaults to fvar order.
@@ -271,6 +272,8 @@ class GFBuilder:
             self.config["buildWebfont"] = self.config["buildStatic"]
         if "autohintTTF" not in self.config:
             self.config["autohintTTF"] = True
+        if "autohintOTF" not in self.config:
+            self.config["autohintOTF"] = True
         if "ttfaUseScript" not in self.config:
             self.config["ttfaUseScript"] = False
         if "logLevel" not in self.config:
@@ -421,7 +424,7 @@ class GFBuilder:
 
     def build_static(self):
         if self.config["buildOTF"]:
-            self.build_a_static_format("otf", self.config["otDir"], self.post_process)
+            self.build_a_static_format("otf", self.config["otDir"], self.post_process_otf)
         if self.config["buildWebfont"]:
             self.mkdir(self.config["woffDir"], clean=True)
         if self.config["buildTTF"]:
@@ -511,6 +514,13 @@ class GFBuilder:
             self.logger.debug("Building webfont")
             woff2_main(["compress", filename])
             self.move_webfont(filename)
+
+    def post_process_otf(self, filename):
+        if self.config["autohintOTF"]:
+            self.logger.debug("Autohinting")
+            autohint(filename, filename, add_script=self.config["ttfaUseScript"])
+        self.post_process(filename)
+
 
     def build_vtt(self, font_dir):
         for font, vtt_source in self.config['vttSources'].items():
